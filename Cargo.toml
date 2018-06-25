@@ -1,0 +1,6 @@
+[package]
+name = "sass-rust"
+version = "0.1.0"
+authors = ["Michiel Missotten <michiel@ouistock.fr>"]
+
+[dependencies]
