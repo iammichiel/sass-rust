@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Michiel Missotten <michiel@ouistock.fr>"]
 
 [dependencies]
+clap = "2.31.2"
+colored = "1.6"
