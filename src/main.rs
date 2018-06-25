@@ -64,6 +64,24 @@ fn compile(contents: String) -> String
         return "".to_string();
     }
 
+    // Goto first {
+    // everything before is first selector 
+    // Goto last }
+    // everything between in properties
+    let m = contents.find('{');
+    match m {
+        None => println!("No nesting"),
+        Some(position) => {
+            let selector:String = contents.chars().take(position).collect();
+            
+            println!("Selector : {}", selector);
+            println!("Found a {{")
+        }
+    }
+
+    // let selector:String = contents.slice(0) ;
+        
+
     
 
 
@@ -72,6 +90,10 @@ fn compile(contents: String) -> String
 
 fn format(contents: String, style: String) -> String 
 {
-    // TODO Implement the style output
+    if style == "expanded" {
+        return contents;
+    }
+
     return contents;
+    
 }
