@@ -53,7 +53,6 @@ fn main() {
 struct Node {
     selector: String, 
     properties: Vec<Property>
-    // properties: LinkedList<Property>
 }
 
 struct Property {
@@ -70,15 +69,16 @@ fn parse(contents: String) -> Vec<Node>
     let mut is_parsing_property = false;
     let mut nodes:Vec<Node> = Vec::new();
 
+    let mut parent_selector: Vec<String> = Vec::new();
     let mut current_selector: String = String::new();
     let mut current_property: String = String::new();
     let mut current_properties: Vec<Property> = Vec::new();
-    let mut current_node: Node;
 
     while let Some(top) = chars.pop() {
         match top {
             '{' => { 
                 current_selector = buffer.clone();
+                parent_selector.push(buffer.clone());
                 buffer = String::new();
             },
 
@@ -92,13 +92,14 @@ fn parse(contents: String) -> Vec<Node>
 
                     buffer = String::new();
                 }
-
+               
                 // Create the node
                 nodes.push(Node {
-                    selector: current_selector.clone(), 
+                    selector: parent_selector.clone().into_iter().fold(String::new(), |previous, current| format!("{} {}",  previous, current)),
                     properties: current_properties
                 });
 
+                parent_selector.pop();
                 current_properties = Vec::new();
             }, 
 
@@ -129,7 +130,6 @@ fn parse(contents: String) -> Vec<Node>
 
     return nodes;
 }
-
 
 fn format(nodes: Vec<Node>, style: String) -> String 
 {
