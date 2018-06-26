@@ -1,6 +1,7 @@
 extern crate clap;
 extern crate colored;
 
+use std::vec;
 use std::path::Path;
 use std::process;
 use std::fs::File;
@@ -42,15 +43,17 @@ fn main() {
         let mut contents = String::new();
         f.read_to_string(&mut contents).expect("something went wrong reading the file");
 
-        let result = compile(contents);
+        let result = parse(contents);
         let formatted_result = format(result, String::from(""));
         print!("{}", formatted_result);
 }
 
+
 // The real program
 struct Node {
     selector: String, 
-    properties: LinkedList<Property>
+    properties: Vec<Property>
+    // properties: LinkedList<Property>
 }
 
 struct Property {
@@ -58,42 +61,88 @@ struct Property {
     value: String
 }
 
-fn compile(contents: String) -> String 
-{
-    if contents == "" {
-        return "".to_string();
-    }
 
-    // Goto first {
-    // everything before is first selector 
-    // Goto last }
-    // everything between in properties
-    let m = contents.find('{');
-    match m {
-        None => println!("No nesting"),
-        Some(position) => {
-            let selector:String = contents.chars().take(position).collect();
-            
-            println!("Selector : {}", selector);
-            println!("Found a {{")
+
+fn parse(contents: String) -> Vec<Node> 
+{
+    let mut chars = contents.chars().rev().collect::<String>();
+    let mut buffer:String = String::from("");
+    let mut is_parsing_property = false;
+    let mut nodes:Vec<Node> = Vec::new();
+
+    let mut current_selector: String = String::new();
+    let mut current_property: String = String::new();
+    let mut current_properties: Vec<Property> = Vec::new();
+    let mut current_node: Node;
+
+    while let Some(top) = chars.pop() {
+        match top {
+            '{' => { 
+                current_selector = buffer.clone();
+                buffer = String::new();
+            },
+
+            '}' => {
+                // If we are parsing a property, (no trailing ;)
+                if is_parsing_property {
+                   current_properties.push(Property {
+                        name: current_property.clone(), 
+                        value: buffer
+                    });
+
+                    buffer = String::new();
+                }
+
+                // Create the node
+                nodes.push(Node {
+                    selector: current_selector.clone(), 
+                    properties: current_properties
+                });
+
+                current_properties = Vec::new();
+            }, 
+
+            ':' => {
+                current_property = buffer;
+                is_parsing_property = true;
+                buffer = String::new();
+            }
+
+            ';' => {
+                if is_parsing_property {
+                    current_properties.push(Property {
+                        name: current_property.clone(), 
+                        value: buffer
+                    });
+
+                    buffer = String::new();
+                }
+
+                is_parsing_property = false;
+            }
+
+            'a' ... 'z' => buffer.push(top),
+
+            _   => () //println!("Is not a matched pattern : {}", top)
         }
     }
 
-    // let selector:String = contents.slice(0) ;
-        
-
-    
-
-
-    return contents;
+    return nodes;
 }
 
-fn format(contents: String, style: String) -> String 
+
+fn format(nodes: Vec<Node>, style: String) -> String 
 {
-    if style == "expanded" {
-        return contents;
+    let mut result = String::new();
+
+    for node in &nodes {
+        result.push_str(&format!("{} {{\n", node.selector));
+        for property in &node.properties {
+            result.push_str(&format!("  {}: {};\n", property.name, property.value));
+        }
+
+        result.push_str("}\n");
     }
 
-    return contents;
-    
+    return result;
 }
