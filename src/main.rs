@@ -1,10 +1,11 @@
 extern crate clap;
 extern crate colored;
 
+// use std::fs;
 use std::path::Path;
 use std::process;
-use std::fs::File;
-use std::io::prelude::*;
+// use std::fs::File;
+// use std::io::prelude::*;
 
 use colored::*;
 use clap::{Arg, App};
@@ -37,13 +38,9 @@ fn main() {
             process::exit(1);
         }
 
-        let mut f = File::open(input_file).expect("Could not read file !");
-        let mut contents = String::new();
-        f.read_to_string(&mut contents).expect("something went wrong reading the file");
-
-        let result = parse(contents);
-        let formatted_result = format(result, String::from(""));
-        print!("{}", formatted_result);
+        // let result = parse(input_file.to_string());
+        // let formatted_result = format(result, String::from(""));
+        // print!("{}", formatted_result);
 }
 
 
@@ -58,80 +55,82 @@ struct Property {
     value: String
 }
 
-struct NodeProperty {
-    name: String
-}
 
-fn parse(contents: String) -> Vec<Node> 
-{
-    let mut chars = contents.chars().rev().collect::<String>();
-    let mut buffer:String = String::from("");
-    let mut is_parsing_property = false;
-    let mut nodes:Vec<Node> = Vec::new();
 
-    let mut parent_selector: Vec<String> = Vec::new();
-    let mut current_selector: String = String::new();
-    let mut current_property: String = String::new();
-    let mut current_properties: Vec<Property> = Vec::new();
+// fn parse(path: String) -> Vec<Node> 
+// {
+//     let mut contents = String::new();
+//     let mut f = File::open(path).expect("Could not read file !");
+//     f.read_to_string(&mut contents).expect("something went wrong reading the file");
 
-    while let Some(top) = chars.pop() {
-        match top {
-            '{' => { 
-                current_selector = buffer.clone();
-                parent_selector.push(buffer.clone());
-                buffer = String::new();
-            },
+//     let mut chars = contents.chars().rev().collect::<String>();
+//     let mut buffer:String = String::from("");
+//     let mut is_parsing_property = false;
+//     let mut nodes:Vec<Node> = Vec::new();
 
-            '}' => {
-                // If we are parsing a property, (no trailing ;)
-                if is_parsing_property {
-                   current_properties.push(Property {
-                        name: current_property.clone(), 
-                        value: buffer
-                    });
+//     let mut parent_selector: Vec<String> = Vec::new();
+//     let mut current_selector: String = String::new();
+//     let mut current_property: String = String::new();
+//     let mut current_properties: Vec<Property> = Vec::new();
 
-                    buffer = String::new();
-                }
+//     while let Some(top) = chars.pop() {
+//         match top {
+//             '{' => { 
+//                 current_selector = buffer.clone();
+//                 parent_selector.push(buffer.clone());
+//                 buffer = String::new();
+//             },
+
+//             '}' => {
+//                 // If we are parsing a property, (no trailing ;)
+//                 if is_parsing_property {
+//                    current_properties.push(Property {
+//                         name: current_property.clone(), 
+//                         value: buffer
+//                     });
+
+//                     buffer = String::new();
+//                 }
                
-                // Create the node
-                // nodes.push(Node {
-                //     selector: parent_selector.clone().into_iter().fold(String::new(), |previous, current| if prevformat!("{} {}",  previous, current)),
-                //     properties: current_properties
-                // });
+//                 // Create the node
+//                 // nodes.push(Node {
+//                 //     selector: parent_selector.clone().into_iter().fold(String::new(), |previous, current| if prevformat!("{} {}",  previous, current)),
+//                 //     properties: current_properties
+//                 // });
 
-                parent_selector.pop();
-                current_properties = Vec::new();
-            }, 
+//                 parent_selector.pop();
+//                 current_properties = Vec::new();
+//             }, 
 
-            ':' => {
-                current_property = buffer;
-                is_parsing_property = true;
-                buffer = String::new();
-            }
+//             ':' => {
+//                 current_property = buffer;
+//                 is_parsing_property = true;
+//                 buffer = String::new();
+//             }
 
-            ';' => {
-                if is_parsing_property {
-                    current_properties.push(Property {
-                        name: current_property.clone(), 
-                        value: buffer
-                    });
+//             ';' => {
+//                 if is_parsing_property {
+//                     current_properties.push(Property {
+//                         name: current_property.clone(), 
+//                         value: buffer
+//                     });
 
-                    buffer = String::new();
-                }
+//                     buffer = String::new();
+//                 }
 
-                is_parsing_property = false;
-            }
+//                 is_parsing_property = false;
+//             }
 
-            'a' ... 'z' => buffer.push(top),
+//             'a' ... 'z' => buffer.push(top),
 
-            _   => () //println!("Is not a matched pattern : {}", top)
-        }
-    }
+//             _   => () //println!("Is not a matched pattern : {}", top)
+//         }
+//     }
 
-    return nodes;
-}
+//     return nodes;
+// }
 
-fn format(nodes: Vec<Node>, style: String) -> String 
+fn format(nodes: Vec<Node>, _style: String) -> String 
 {
     let mut result = String::new();
 
@@ -147,13 +146,91 @@ fn format(nodes: Vec<Node>, style: String) -> String
     return result;
 }
 
+fn tokenize(content: String) -> Vec<Token>
+{
+    let mut result:Vec<Token> = Vec::new();
+    let mut chars = content.chars().rev().collect::<String>();
+    let mut buffer: String = String::new();
+
+    while let Some(value) = chars.pop() {
+
+        match value {
+            ' ' => {},
+
+            '{' => { 
+                result.push(Token(TokenType::Selector, Some(buffer.clone())));
+                result.push(Token(TokenType::OpenBrace, None));
+                buffer = String::new();
+            },
+
+            '}' => {
+                result.push(Token(TokenType::CloseBrace, None));
+            },
+
+            ':' => {
+                result.push(Token(TokenType::VariableName, Some(buffer.clone())));
+                buffer = String::new();
+            },
+
+            ';' => {
+                result.push(Token(TokenType::VariableValue, Some(buffer.clone())));
+                buffer = String::new();
+            },
+
+            _ => {
+                buffer.push(value);
+            }
+        }     
+    }
+
+    return result;
+}
+
+
+
+
+
+// #[test]
+// #[ignore]
+// fn test_sass_specs() {
+//     let paths = fs::read_dir("./sass-specs/spec/basic/").unwrap();
+
+//     for path in paths {
+//         let p =  path.unwrap().path();
+//         let full_input_path = format!("{}/input.scss", p.display());
+
+//         let input = parse(full_input_path);
+//         let input_result = format(input, "".to_string());
+
+//         let mut output = String::new();
+//         let full_output_path: String = format!("{}/expected_output.css", p.display());
+        
+//         let mut f = File::open(full_output_path).expect("could not read value");
+//         f.read_to_string(&mut output).expect("something went wrong reading the file");
+
+//         assert_eq!(input_result, output);
+//     }
+// }
+
+
+
+struct Token(TokenType, Option<String>);
+
+#[derive(PartialEq, Debug)]
+enum TokenType {
+    Selector,
+    VariableName,
+    VariableValue, 
+    OpenBrace, 
+    CloseBrace
+}
+
+
+
 #[test]
-fn test_parsing() {
-
-    let ouput = parse("a { color: red }");
-
-
-
-
-
+fn test_basic_parsing() {  
+    let result = tokenize("a { color: blue; }".to_string());
+    assert_eq!(result.len(), 5);
+    assert_eq!(TokenType::Selector, result.get(0).unwrap().0);
+    assert_eq!("a".to_string(), result.get(0).unwrap().1.unwrap());
 }
