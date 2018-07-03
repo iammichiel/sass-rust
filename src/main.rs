@@ -1,12 +1,10 @@
 extern crate clap;
 extern crate colored;
 
-use std::vec;
 use std::path::Path;
 use std::process;
 use std::fs::File;
 use std::io::prelude::*;
-use std::collections::LinkedList;
 
 use colored::*;
 use clap::{Arg, App};
@@ -60,7 +58,9 @@ struct Property {
     value: String
 }
 
-
+struct NodeProperty {
+    name: String
+}
 
 fn parse(contents: String) -> Vec<Node> 
 {
@@ -94,10 +94,10 @@ fn parse(contents: String) -> Vec<Node>
                 }
                
                 // Create the node
-                nodes.push(Node {
-                    selector: parent_selector.clone().into_iter().fold(String::new(), |previous, current| format!("{} {}",  previous, current)),
-                    properties: current_properties
-                });
+                // nodes.push(Node {
+                //     selector: parent_selector.clone().into_iter().fold(String::new(), |previous, current| if prevformat!("{} {}",  previous, current)),
+                //     properties: current_properties
+                // });
 
                 parent_selector.pop();
                 current_properties = Vec::new();
@@ -145,4 +145,15 @@ fn format(nodes: Vec<Node>, style: String) -> String
     }
 
     return result;
+}
+
+#[test]
+fn test_parsing() {
+
+    let ouput = parse("a { color: red }");
+
+
+
+
+
 }
