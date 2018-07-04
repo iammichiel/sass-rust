@@ -11,6 +11,7 @@ use colored::*;
 use clap::{Arg, App};
 
 mod tokenizer;
+mod parser;
 
 fn main() {  
     let matches = App::new("Rust-sass")

@@ -8,7 +8,8 @@ pub enum TokenType {
     OpenBrace, 
     CloseBrace, 
     PropertyName, 
-    PropertyValue
+    PropertyValue, 
+    PropertyVariableValue
 }
 
 pub fn tokenize(content: String) -> Vec<Token>
@@ -19,16 +20,21 @@ pub fn tokenize(content: String) -> Vec<Token>
     
     let mut is_parsing_variable = false;
     let mut is_parsing_property = false;
+    let mut is_parsing_property_variable = false;
 
     let mut nesting_level:i8 = 0;
 
     while let Some(value) = chars.pop() {
+
+        println!("Current value : {}", value);
         match value {
             ' ' => {},
 
             '$' => {
                 if !is_parsing_property {
                     is_parsing_variable = true;
+                } else {
+                    is_parsing_property_variable = true;
                 }
             },
 
@@ -42,6 +48,8 @@ pub fn tokenize(content: String) -> Vec<Token>
             '}' => {
                 if is_parsing_variable {
                     result.push(Token(TokenType::VariableValue, Some(buffer.clone())));    
+                } else if is_parsing_property_variable {
+                    result.push(Token(TokenType::PropertyVariableValue, Some(buffer.clone())));
                 } else if is_parsing_property {
                     result.push(Token(TokenType::PropertyValue, Some(buffer.clone())));
                 }
@@ -68,11 +76,14 @@ pub fn tokenize(content: String) -> Vec<Token>
             ';' => {
                 if is_parsing_variable {
                     result.push(Token(TokenType::VariableValue, Some(buffer.clone())));    
+                } else if is_parsing_property_variable {
+                    result.push(Token(TokenType::PropertyVariableValue, Some(buffer.clone())));
                 } else if is_parsing_property {
                     result.push(Token(TokenType::PropertyValue, Some(buffer.clone())));
                 }
 
                 is_parsing_property = false;
+                is_parsing_property_variable = false;
                 is_parsing_variable = false;
                 buffer = String::new();
             },
@@ -91,8 +102,7 @@ pub fn tokenize(content: String) -> Vec<Token>
 }
 
 #[test]
-#[ignore]
-fn test_basic_parsing() {  
+fn test_basic_tokens() {  
     let result = tokenize("a { color: \nblue; }".to_string());
     assert_eq!(result.len(), 5);
 
@@ -104,15 +114,13 @@ fn test_basic_parsing() {
 }
 
 #[test]
-#[ignore]
-fn test_empty_parsing() {
+fn test_empty_tokens() {
     let result = tokenize("".to_string());
     assert_eq!(result.len(), 0);
 }
 
 #[test]
-#[ignore]
-fn test_nested_parsing() {
+fn test_nested_tokens() {
     let result = tokenize("body { a { color: blue; } }".to_string());
 
     assert_eq!(result.len(), 8);
@@ -127,7 +135,7 @@ fn test_nested_parsing() {
 }
 
 #[test]
-fn test_variable_parsing() {
+fn test_variable_tokens() {
     let result = tokenize("$name: blue; a \n{ color: $name }".to_string());
 
     assert_eq!(result.len(), 7);
@@ -136,12 +144,12 @@ fn test_variable_parsing() {
     assert_eq!(TokenType::Selector, result.get(2).unwrap().0);
     assert_eq!(TokenType::OpenBrace, result.get(3).unwrap().0);
     assert_eq!(TokenType::PropertyName, result.get(4).unwrap().0);
-    assert_eq!(TokenType::PropertyValue, result.get(5).unwrap().0);
+    assert_eq!(TokenType::PropertyVariableValue, result.get(5).unwrap().0);
     assert_eq!(TokenType::CloseBrace, result.get(6).unwrap().0);
 }
 
 #[test]
 #[should_panic]
-fn test_unclosed_brace() {
+fn test_unclosed_brace_tokens() {
     let result = tokenize("a { color: blue; ".to_string());
 }
