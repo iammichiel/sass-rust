@@ -21,6 +21,8 @@ pub fn tokenize(content: String) -> Vec<Token>
 
     while let Some(value) = chars.pop() {
 
+        println!("Parsing variable : {} {}", value, is_parsing_variable);
+
         match value {
             ' ' => {},
 
@@ -69,6 +71,7 @@ pub fn tokenize(content: String) -> Vec<Token>
 }
 
 #[test]
+#[ignore]
 fn test_basic_parsing() {  
     let result = tokenize("a { color: \nblue; }".to_string());
     assert_eq!(result.len(), 5);
@@ -81,12 +84,14 @@ fn test_basic_parsing() {
 }
 
 #[test]
+#[ignore]
 fn test_empty_parsing() {
     let result = tokenize("".to_string());
     assert_eq!(result.len(), 0);
 }
 
 #[test]
+#[ignore]
 fn test_nested_parsing() {
     let result = tokenize("body { a { color: blue; } }".to_string());
 
@@ -105,4 +110,13 @@ fn test_nested_parsing() {
 fn test_variable_parsing() {
     let result = tokenize("$name: blue; a { color: $name; }".to_string());
 
+
+    assert_eq!(result.len(), 7);
+    assert_eq!(TokenType::VariableName, result.get(0).unwrap().0);
+    assert_eq!(TokenType::VariableValue, result.get(1).unwrap().0);
+    assert_eq!(TokenType::Selector, result.get(2).unwrap().0);
+    assert_eq!(TokenType::OpenBrace, result.get(3).unwrap().0);
+    assert_eq!(TokenType::PropertyName, result.get(4).unwrap().0);
+    assert_eq!(TokenType::PropertyValue, result.get(5).unwrap().0);
+    assert_eq!(TokenType::CloseBrace, result.get(6).unwrap().0);
 }
